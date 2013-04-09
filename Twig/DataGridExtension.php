@@ -69,6 +69,8 @@ class DataGridExtension extends \Twig_Extension
     public function initRuntime(\Twig_Environment $environment)
     {
         $this->environment = $environment;
+        
+        return;  // return here as a quickfix for bundle issue #316, see upstream
 
         // Avoids the exception "Variable does not exist" with the _self template
         $globals = $this->environment->getGlobals();
