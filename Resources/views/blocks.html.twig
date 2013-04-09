@@ -61,6 +61,7 @@
     {% for column in grid.columns %}
         {% if column.visible(grid.isReadyForExport) %}
             <th class="{% if column.align != 'left'%}align-{{ column.align }}{% endif %}{% if loop.last %} last-column{% endif %}"{% if(column.size > -1) %} style="width:{{ column.size }}px;"{% endif %}>
+            {%- spaceless %}
             {% if column.type == 'massaction' %}
                 <input type="checkbox" class="grid-mass-selector" onclick="{{ grid.hash }}_markVisible(this.checked);"/>
             {% else %}
@@ -79,6 +80,7 @@
                     {{ columnTitle|trans }}
                 {% endif %}
             {% endif %}
+            {% endspaceless -%}
             </th>
         {% endif %}
     {% endfor %}
@@ -100,9 +102,9 @@
     <div class="grid-search">
         <form id="{{ grid.hash }}_search" action="{{ grid.routeUrl }}" method="post">
         {% for column in grid.columns %}
-            {% if column.visible(true) and column.isFilterable %}
+            {% if column.visible(true) and column.isFilterable and column.type not in ['actions', 'massaction'] %}
                 {% set columnTitle = grid.prefixTitle ~ column.title %}
-                {% if column.filterable %}<div class="{{ cycle(['odd', 'even'], loop.index) }}"><label>{{ columnTitle|trans }}</label>{{ grid_filter(column, grid, false)|raw }}</div>{% endif %}
+                <div class="{{ cycle(['odd', 'even'], loop.index) }}"><label>{{ columnTitle|trans }}</label>{{ grid_filter(column, grid, false)|raw }}</div>
             {% endif %}
         {% endfor %}
             <div class="grid-search-action"><input type="submit" class="grid-search-submit" value="{{ 'Search'|trans }}"/><input type="button" class="grid-search-reset" value="{{ 'Reset'|trans }}" onclick="return {{ grid.hash }}_reset();"/></div>
@@ -207,7 +209,7 @@
     {% spaceless %}
         {{ 'Tweaks'|trans }}
             <select name="{{grid.hash}}[{{ constant('APY\\DataGridBundle\\Grid\\Grid::REQUEST_QUERY_TWEAK') }}]">
-            <option value="-1"></option>
+            <option value=""></option>
             {% for key, tweak in grid.tweaks %}
             <option value="{{key}}">{{ tweak.title|trans }}</option>
             {% endfor %}
@@ -219,9 +221,11 @@
 {# ------------------------------------------------ grid_column_actions_cell --------------------------------------------- #}
 {% block grid_column_actions_cell %}
     {% set actions = column.getActionsToRender(row) %}
+    <ul class="grid-row-actions">
     {% for action in actions %}
-        <a href="{{ url(action.route, column.routeParameters(row, action), false) }}" target="{{ action.target }}"{% if action.confirm %} onclick="return confirm('{{ action.confirmMessage }}')"{% endif %}{% for name, value in action.attributes %} {{ name }}="{{ value }}" {% endfor %}>{{ action.title|trans }}</a>{{ column.separator|raw }}
+        <li><a href="{{ url(action.route, column.routeParameters(row, action), false) }}" target="{{ action.target }}"{% if action.confirm %} onclick="return confirm('{{ action.confirmMessage }}')"{% endif %}{% for name, value in action.attributes %} {{ name }}="{{ value }}" {% endfor %}>{{ action.title|trans }}</a></li>
     {% endfor %}
+    </ul>
 {% endblock grid_column_actions_cell %}
 {# ------------------------------------------------ grid_column_massaction_cell --------------------------------------------- #}
 {% block grid_column_massaction_cell %}
@@ -229,7 +233,6 @@
 {% endblock grid_column_massaction_cell %}
 {# ------------------------------------------------ grid_column_boolean_cell --------------------------------------------- #}
 {% block grid_column_boolean_cell %}
-    {% set value = value is sameas(false) ? 'false' : value %}
     <span class="grid_boolean_{{ value }}" title="{{ value }}">{{ block('grid_column_cell') }}</span>
 {% endblock grid_column_boolean_cell %}
 {# ------------------------------------------------ grid_array_columns --------------------------------------------- #}
@@ -244,6 +247,7 @@
 {% endblock grid_column_array_cell %}
 {# ------------------------------------------- grid_column_cell ---------------------------------------- #}
 {% block grid_column_cell %}
+{%- spaceless %}
 {% if column.filterable and column.searchOnClick %}
     {% set sourceValue = sourceValue is defined ? sourceValue : row.field(column.id) %}
     <a href="?{{ grid.hash }}[{{ column.id }}][from]={{ sourceValue | url_encode() }}" class="searchOnClick">{{ value }}</a>
@@ -252,6 +256,7 @@
 {% else %}
     {{ value|escape(column.safe)|raw }}
 {% endif %}
+{% endspaceless -%}
 {% endblock grid_column_cell %}
 {# -------------------------------------------- grid_column_operator --------------------------------------- #}
 {% block grid_column_operator %}
@@ -275,7 +280,7 @@
 {% set from = column.data.from is defined ? column.data.from : null %}
 {% set to = column.data.to is defined ? column.data.to : null %}
 <span class="grid-filter-input">
-    {{ block('grid_column_operator')}}
+    {{ grid_column_operator(column, grid, op, submitOnChange) }}
     <span class="grid-filter-input-query">
         <input type="{{ column.inputType }}" value="{{ from }}" class="grid-filter-input-query-from" name="{{ grid.hash }}[{{ column.id }}][from]" id="{{ grid.hash }}__{{ column.id }}__query__from" {% if submitOnChange is sameas(true) %}onkeypress="return {{ grid.hash }}_submitForm(event, this.form);"{% endif%} {{ ( op == isNullOperator or op == isNotNullOperator ) ? 'style="display: none;" disabled="disabled"' : '' }} />
         <input type="{{ column.inputType }}" value="{{ to }}" class="grid-filter-input-query-to" name="{{ grid.hash }}[{{ column.id }}][to]" id="{{ grid.hash }}__{{ column.id }}__query__to" {% if submitOnChange is sameas(true) %}onkeypress="return {{ grid.hash }}_submitForm(event, this.form);"{% endif%} {{ ( op == btwOperator or op == btweOperator ) ? '': 'style="display: none;" disabled="disabled"' }} />
@@ -294,7 +299,7 @@
 {% set multiple = column.selectMulti %}
 {% set expanded = column.selectExpanded %}
 <span class="grid-filter-select">
-    {{ block('grid_column_operator')}}
+    {{ grid_column_operator(column, grid, op, submitOnChange) }}
     <span class="grid-filter-select-query">
     {% if expanded %}
         <span class="grid-filter-select-query-from" id="{{ grid.hash }}__{{ column.id }}__query__from" {{ ( op == isNullOperator or op == isNotNullOperator ) ? 'style="display: none;" disabled="disabled"' : '' }}>

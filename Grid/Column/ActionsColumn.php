@@ -15,12 +15,10 @@ namespace APY\DataGridBundle\Grid\Column;
 class ActionsColumn extends Column
 {
     protected $rowActions;
-    protected $separator;
 
-    public function __construct($column, $title, array $rowActions = array(), $separator = '<br />')
+    public function __construct($column, $title, array $rowActions = array())
     {
         $this->rowActions = $rowActions;
-        $this->separator = $separator;
 
         parent::__construct(array(
             'id'         => $column,
@@ -85,18 +83,6 @@ class ActionsColumn extends Column
         }
 
         return parent::isVisible();
-    }
-
-    public function setSeparator($separator)
-    {
-        $this->separator = $separator;
-
-        return $this;
-    }
-
-    public function getSeparator()
-    {
-        return $this->separator;
     }
 
     public function getFilterType()
